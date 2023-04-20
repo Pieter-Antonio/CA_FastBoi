@@ -32,7 +32,7 @@ module alu #(
    parameter [3:0] SRL_OP = 4'd4;
    parameter [3:0] SUB_OP = 4'd6;
    parameter [3:0] SLT_OP = 4'd7;
-   parameter [3:0] MUL_OP        = 4'd8;
+   parameter [3:0] MUL_OP = 4'd8;
 
 
    //REG AND WIRE DECLARATION

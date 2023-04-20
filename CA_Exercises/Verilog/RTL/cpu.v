@@ -142,7 +142,7 @@ mux_2 #(
    .DATA_W(64)
 ) alu_operand_mux (
    .input_a (immediate_extended),
-   .input_b (regfile_rdata_2    ),
+   .input_b (regfile_rdata_2   ),
    .select_a(alu_src           ),
    .mux_out (alu_operand_2     )
 );

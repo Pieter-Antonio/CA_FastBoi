@@ -33,17 +33,71 @@ module control_unit(
 
       case(opcode)
          ALU_R:begin
-            alu_src   = 1'b0;
+            alu_src   = 1'b0; // 0 for register, 1 for immediate
+            mem_2_reg = 1'b0; // 0 for ALU, 1 for memory read
+            reg_write = 1'b1; // Write to the register
+            mem_read  = 1'b0; // read from the mem
+            mem_write = 1'b0; // write to the mem
+            branch    = 1'b0; // Enable branch if zero flag
+            alu_op    = R_TYPE_OPCODE;
+            jump      = 1'b0; // Enable jump
+         end
+         
+         // Declare the control signals for each one of the instructions here...
+         ALU_I:begin
+            alu_src   = 1'b1;
             mem_2_reg = 1'b0;
             reg_write = 1'b1;
             mem_read  = 1'b0;
             mem_write = 1'b0;
             branch    = 1'b0;
-            alu_op    = R_TYPE_OPCODE;
+            alu_op    = ADD_OPCODE;
             jump      = 1'b0;
          end
-         
-         // Declare the control signals for each one of the instructions here...
+
+         BRANCH_EQ:begin
+            alu_src   = 1'b0;
+            mem_2_reg = 1'b0;
+            reg_write = 1'b0;
+            mem_read  = 1'b0;
+            mem_write = 1'b0;
+            branch    = 1'b1;
+            alu_op    = SUB_OPCODE;
+            jump      = 1'b0;
+         end
+
+         JUMP:begin
+            alu_src   = 1'b0;
+            mem_2_reg = 1'b0;
+            reg_write = 1'b0;
+            mem_read  = 1'b0;
+            mem_write = 1'b0;
+            branch    = 1'b0;
+            alu_op    = R_TYPE_OPCODE;
+            jump      = 1'b1;
+         end
+
+         LOAD:begin
+            alu_src   = 1'b1;
+            mem_2_reg = 1'b1;
+            reg_write = 1'b1;
+            mem_read  = 1'b1;
+            mem_write = 1'b0;
+            branch    = 1'b0;
+            alu_op    = ADD_OPCODE;
+            jump      = 1'b0;
+         end
+
+         STORE:begin
+            alu_src   = 1'b1;
+            mem_2_reg = 1'b0;
+            reg_write = 1'b0;
+            mem_read  = 1'b0;
+            mem_write = 1'b1;
+            branch    = 1'b0;
+            alu_op    = ADD_OPCODE; 
+            jump      = 1'b0;
+         end
 
          default:begin
             alu_src   = 1'b0;

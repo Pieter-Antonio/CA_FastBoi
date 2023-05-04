@@ -51,7 +51,8 @@ wire              reg_dst,branch,mem_read,mem_2_reg,
 wire [       4:0] regfile_waddr;
 wire [      63:0] regfile_wdata,mem_data,alu_out,
                   regfile_rdata_1,regfile_rdata_2,
-                  alu_operand_2;
+                  alu_operand_2, alu_operand_A, alu_operand_B;
+wire [       1:0] forward_select_a, forward_select_b;
 
 wire signed [63:0] immediate_extended;
 
@@ -260,11 +261,44 @@ mux_2 #(
    .mux_out (alu_operand_2        )
 );
 
+forwarding_unit forwarding_unit(
+   .reg_write_MEM(reg_write_MEM        ),
+   .reg_write_WB (reg_write_WB         ),
+   .mem_2_reg_MEM(mem_2_reg_MEM        ),
+   .mem_2_reg_WB (mem_2_reg_WB         ),
+   .rs1_ID_EX    (instruction_EX[19:15]),
+   .rs2_ID_EX    (instruction_EX[24:20]),
+   .rd_EX_MEM    (instruction_MEM[11:7]),
+   .rd_MEM_WB    (instruction_WB[ 11:7]),
+   .mux_select_a (forward_select_a     ),
+   .mux_select_b (forward_select_b     )
+);
+
+mux_3 #(
+   .DATA_W(64)
+) forwarding_mux_a (
+   .input_a (regfile_rdata_1_EX),
+   .input_b (regfile_wdata),
+   .input_c (alu_out_MEM),
+   .select_a(forward_select_a),
+   .mux_out (alu_operand_A)
+);
+
+mux_3 #(
+   .DATA_W(64)
+) forwarding_mux_b (
+   .input_a (alu_operand_2),
+   .input_b (regfile_wdata),
+   .input_c (alu_out_MEM),
+   .select_a(forward_select_b),
+   .mux_out (alu_operand_B)
+);
+
 alu#(
    .DATA_W(64)
 ) alu(
-   .alu_in_0 (regfile_rdata_1_EX ),
-   .alu_in_1 (alu_operand_2      ),
+   .alu_in_0 (alu_operand_A      ),
+   .alu_in_1 (alu_operand_B      ),
    .alu_ctrl (alu_control        ),
    .alu_out  (alu_out            ),
    .zero_flag(zero_flag          ),

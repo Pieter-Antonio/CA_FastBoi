@@ -20,7 +20,7 @@ module hazard_detection_unit(
       output reg        if_id_enable
    );
 
-    always @(*) begin
+    always @(*) begin // INSTRUCTION 17 IS EXECUTED TWICE INSTEAD OF INSTRUCTION 16
         if (mem_read_ex && ((register_rd_ex == register_rs1_id) || (register_rd_ex == register_rs2_id))) begin
             flush_pipeline <= 1'b1;
             pc_enable <= 1'b0;

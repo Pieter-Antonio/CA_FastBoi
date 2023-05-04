@@ -42,12 +42,12 @@ reg               pc_src;
 wire              zero_flag, pc_enable, pipeline_IF_ID_en, flush_pipeline;
 wire [      63:0] branch_pc,updated_pc,current_pc,jump_pc;
 wire [      31:0] instruction;
-wire [       1:0] alu_op;
+wire [       1:0] alu_op, alu_op_mux;
 wire [       3:0] alu_control;
 wire              reg_dst,branch,mem_read,mem_2_reg,
                   mem_write,alu_src, reg_write, jump,
-                  alu_op_mux, reg_dst_mux, branch_mux, mem_read_mux,
-                  mem_2_reg_mux, mem_write_mux, alu_src_mux, reg_write_mux, jump_mux;
+                  reg_dst_mux, branch_mux, mem_read_mux, mem_2_reg_mux,
+                  mem_write_mux, alu_src_mux, reg_write_mux, jump_mux;
 wire [       4:0] regfile_waddr;
 wire [      63:0] regfile_wdata,mem_data,alu_out,
                   regfile_rdata_1,regfile_rdata_2,
@@ -176,7 +176,7 @@ hazard_detection_unit hazard_detection_unit(
 
 mux_2 #(
    .DATA_W(10)
-) alu_operand_mux (
+) pipeline_flush_mux (
    .input_a ({2'b00, 1'b0, 1'b0, 1'b0, 1'b0, 1'b0, 1'b0, 1'b0, 1'b0}),
    .input_b ({alu_op_mux, reg_dst_mux, branch_mux, mem_read_mux, mem_2_reg_mux, mem_write_mux, alu_src_mux, reg_write_mux, jump_mux}),
    .select_a(flush_pipeline),
@@ -189,8 +189,8 @@ branch_unit#(
    .updated_pc         (updated_pc_ID     ),
    .immediate_extended (immediate_extended),
    .branch             (branch            ),
-   .rdata_1            (regfile_rdata_1   )
-   .rdata_2            (regfile_rdata_2   )
+   .rdata_1            (regfile_rdata_1   ),
+   .rdata_2            (regfile_rdata_2   ),
    .branch_pc          (branch_pc         ),
    .jump_pc            (jump_pc           ),
    .pc_src             (pc_src            )

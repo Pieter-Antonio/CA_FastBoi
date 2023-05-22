@@ -41,7 +41,7 @@ module cpu(
 reg               pc_src;
 wire              zero_flag, pc_enable, pipeline_IF_ID_en, flush_pipeline;
 wire [      63:0] branch_pc,updated_pc,current_pc,jump_pc;
-wire [      31:0] instruction;
+wire [      31:0] instruction, instruction_ID;
 wire [       1:0] alu_op, alu_op_mux;
 wire [       3:0] alu_control;
 wire              reg_dst,branch,mem_read,mem_2_reg,
@@ -58,10 +58,10 @@ wire signed [63:0] immediate_extended;
 
 //////////////////////// PIPELINE wiring ////////////////////////
 
-wire [      95:0] pipeline_IF_ID_in     = {instruction, updated_pc}; //(64+32+)
+wire [      95:0] pipeline_IF_ID_in     = (pc_src || jump) ? {32'h00000013, updated_pc} : {instruction, updated_pc}; //(64+32+)
 wire [      95:0] pipeline_IF_ID_out;
 
-wire [      31:0] instruction_ID        = pipeline_IF_ID_out[  95:64];
+wire [      31:0] instruction_ID_in     = pipeline_IF_ID_out[  95:64];
 wire [      63:0] updated_pc_ID         = pipeline_IF_ID_out[   63:0];
 
 wire [     297:0] pipeline_ID_EX_in     = {regfile_rdata_1, regfile_rdata_2, immediate_extended, instruction_ID, updated_pc_ID, 
@@ -127,7 +127,7 @@ pc #(
    .pc_src    (pc_src       ),
    //.zero_flag (zero_flag ),
    //.branch    (branch    ),
-   .jump      (jump_MEM     ),
+   .jump      (jump         ),
    .current_pc(current_pc   ),
    .enable    (pc_enable    ),
    .updated_pc(updated_pc   )
@@ -166,22 +166,24 @@ reg_arstn_en #(
 ////////////////////////// ID STAGE //////////////////////////
 
 hazard_detection_unit hazard_detection_unit(
-      .register_rs1_id(instruction_ID[19:15]),
-      .register_rs2_id(instruction_ID[24:20]),
-      .register_rd_ex (instruction_EX[11:7] ),
-      .mem_read_ex    (mem_read_EX          ),
-      .flush_pipeline (flush_pipeline       ),
-      .pc_enable      (pc_enable            ),
-      .if_id_enable   (pipeline_IF_ID_en    )
+      .register_rs1_id(instruction_ID_in[19:15]),
+      .register_rs2_id(instruction_ID_in[24:20]),
+      .register_rd_ex (instruction_EX[11:7]    ),
+      .mem_read_id    (mem_read                ),
+      .mem_read_ex    (mem_read_EX             ),
+      .flush_pipeline (flush_pipeline          ),
+      .pc_enable      (pc_enable               ),
+      .if_id_enable   (pipeline_IF_ID_en       )
 );
 
 mux_2 #(
-   .DATA_W(10)
+   .DATA_W(42)
 ) pipeline_flush_mux (
-   .input_a ({2'b00, 1'b0, 1'b0, 1'b0, 1'b0, 1'b0, 1'b0, 1'b0, 1'b0}),
-   .input_b ({alu_op_mux, reg_dst_mux, branch_mux, mem_read_mux, mem_2_reg_mux, mem_write_mux, alu_src_mux, reg_write_mux, jump_mux}),
+   .input_a ({2'b00, 1'b0, 1'b0, 1'b0, 1'b0, 1'b0, 1'b0, 1'b0, 1'b0, 32'h00000013}),
+   .input_b ({ alu_op_mux, reg_dst_mux, branch_mux, mem_read_mux, mem_2_reg_mux,
+               mem_write_mux, alu_src_mux, reg_write_mux, jump_mux, instruction_ID_in}),
    .select_a(flush_pipeline),
-   .mux_out ({alu_op, reg_dst, branch, mem_read, mem_2_reg, mem_write, alu_src, reg_write, jump})
+   .mux_out ({alu_op, reg_dst, branch, mem_read, mem_2_reg, mem_write, alu_src, reg_write, jump, instruction_ID})
 );
 
 branch_unit#(
@@ -198,21 +200,21 @@ branch_unit#(
 );
 
 immediate_extend_unit immediate_extend_u(
-    .instruction         (instruction_ID    ),
+    .instruction         (instruction_ID_in ),
     .immediate_extended  (immediate_extended)
 );
 
 control_unit control_unit(
-   .opcode   (instruction_ID[6:0]),
-   .alu_op   (alu_op_mux         ),
-   .reg_dst  (reg_dst_mux        ),
-   .branch   (branch_mux         ),
-   .mem_read (mem_read_mux       ),
-   .mem_2_reg(mem_2_reg_mux      ),
-   .mem_write(mem_write_mux      ),
-   .alu_src  (alu_src_mux        ),
-   .reg_write(reg_write_mux      ),
-   .jump     (jump_mux           )
+   .opcode   (instruction_ID_in[6:0]),
+   .alu_op   (alu_op_mux            ),
+   .reg_dst  (reg_dst_mux           ),
+   .branch   (branch_mux            ),
+   .mem_read (mem_read_mux          ),
+   .mem_2_reg(mem_2_reg_mux         ),
+   .mem_write(mem_write_mux         ),
+   .alu_src  (alu_src_mux           ),
+   .reg_write(reg_write_mux         ),
+   .jump     (jump_mux              )
 );
 
 register_file #(
@@ -221,8 +223,8 @@ register_file #(
    .clk      (clk                     ),
    .arst_n   (arst_n                  ),
    .reg_write(reg_write_WB            ),
-   .raddr_1  (instruction_ID[19:15]   ),
-   .raddr_2  (instruction_ID[24:20]   ),
+   .raddr_1  (instruction_ID_in[19:15]),
+   .raddr_2  (instruction_ID_in[24:20]),
    .waddr    (instruction_WB[11:7]    ),
    .wdata    (regfile_wdata           ),
    .rdata_1  (regfile_rdata_1         ),

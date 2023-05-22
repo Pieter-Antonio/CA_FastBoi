@@ -16,10 +16,10 @@ module forwarding_unit (
     output reg [1:0] mux_select_b
 );
 
-wire comparator_hazard_1a = (rs1_ID_EX == rd_EX_MEM & reg_write_MEM & ~mem_2_reg_MEM);
-wire comparator_hazard_1b = (rs2_ID_EX == rd_EX_MEM & reg_write_MEM & ~mem_2_reg_MEM);
-wire comparator_hazard_2a = (rs1_ID_EX == rd_MEM_WB & reg_write_WB  & ~mem_2_reg_WB );
-wire comparator_hazard_2b = (rs2_ID_EX == rd_MEM_WB & reg_write_WB  & ~mem_2_reg_WB );
+wire comparator_hazard_1a = ((rs1_ID_EX == rd_EX_MEM) & reg_write_MEM & (rd_EX_MEM != 5'b0) & ~mem_2_reg_MEM);
+wire comparator_hazard_1b = ((rs2_ID_EX == rd_EX_MEM) & reg_write_MEM & (rd_EX_MEM != 5'b0) & ~mem_2_reg_MEM);
+wire comparator_hazard_2a = ((rs1_ID_EX == rd_MEM_WB) & reg_write_WB  & (rd_MEM_WB != 5'b0) & ~comparator_hazard_1a);
+wire comparator_hazard_2b = ((rs2_ID_EX == rd_MEM_WB) & reg_write_WB  & (rd_MEM_WB != 5'b0) & ~comparator_hazard_1b);
 
 assign mux_select_a = {comparator_hazard_1a, comparator_hazard_2a};
 assign mux_select_b = {comparator_hazard_1b, comparator_hazard_2b};

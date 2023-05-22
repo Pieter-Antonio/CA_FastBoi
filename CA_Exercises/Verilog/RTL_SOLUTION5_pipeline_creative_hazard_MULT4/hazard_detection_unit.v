@@ -14,14 +14,15 @@ module hazard_detection_unit(
       input  wire [4:0] register_rs1_id,
       input  wire [4:0] register_rs2_id,
       input  wire [4:0] register_rd_ex,
+      input  wire       mem_read_id,
       input  wire       mem_read_ex,
       output reg        flush_pipeline,
       output reg        pc_enable,
       output reg        if_id_enable
    );
 
-    always @(*) begin // INSTRUCTION 17 IS EXECUTED TWICE INSTEAD OF INSTRUCTION 16
-        if (mem_read_ex && ((register_rd_ex == register_rs1_id) || (register_rd_ex == register_rs2_id))) begin
+    always @(*) begin // Load Use Hazard
+        if (mem_read_ex && ((register_rd_ex == register_rs1_id) || (register_rd_ex == register_rs2_id)) && ~mem_read_id) begin
             flush_pipeline <= 1'b1;
             pc_enable <= 1'b0;
             if_id_enable <= 1'b0;
